@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>制度管理系统 - 智能问答</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar for Document Uploads -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+            <h2>UniBrain Q&A</h2>
+            <button id="new-chat-btn" style="width:100%; padding: 10px; margin-bottom: 24px; background: var(--accent-color); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">+ 新建对话</button>
+        </div>
+
+        <div class="conv-list-section" style="margin-bottom: 24px; max-height: 35%; overflow-y: auto;">
+            <h3 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 600;">历史对话</h3>
+            <ul id="conv-list" style="list-style: none; gap: 8px; display: flex; flex-direction: column;"></ul>
+        </div>
+            
+            <div class="upload-section">
+                <div id="drop-zone" class="drop-zone">
+                    <span class="upload-icon">📄</span>
+                    <p>拖拽文件至此</p>
+                    <p class="sub-text">或点击上传 (PDF, Word, TXT)</p>
+                    <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" />
+                </div>
+                <!-- Upload status -->
+                <div id="upload-status" class="upload-status hidden">
+                    <div class="spinner"></div>
+                    <span>处理中...</span>
+                </div>
+            </div>
+
+            <div class="doc-list-section">
+                <h3>已上传文档</h3>
+                <ul id="doc-list">
+                    <!-- Dynamic List -->
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <header class="chat-header">
+                <div class="chat-title">
+                    <span class="ai-icon">✨</span>
+                    <h2>智能问答助手</h2>
+                </div>
+                <div class="status-indicator">
+                    <span class="dot active"></span> 服务正常
+                </div>
+            </header>
+
+            <div id="chat-messages" class="chat-messages">
+                <div class="message ai">
+                    <div class="avatar">AI</div>
+                    <div class="bubble">欢迎使用制度系统问答！您可以先从左侧上传制度文档，然后在这里向我提问有关内容。</div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <form id="chat-form">
+                    <input type="text" id="chat-input" placeholder="请输入关于公司制度的问题..." autocomplete="off"/>
+                    <button type="submit" id="send-btn">发送</button>
+                </form>
+            </div>
+        </main>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

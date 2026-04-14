@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# 虚拟环境
+.venv/
+
+# 环境变量
+.env
+
+# 上传的原始制度文件（运行时产生，不纳入版本管理）
+static/uploads/
+
+# 临时文件
+temp_uploads/
+*.tmp
+
+# 测试临时文件
+debug_qa.py
+check_chat.py
+init_db.py
+
+# 操作系统
+.DS_Store
