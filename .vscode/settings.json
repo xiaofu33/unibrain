@@ -1,0 +1,7 @@
+{
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "text": "请始终用简体中文生成 commit 信息。格式严格遵守：<英文类型>: <中文简短描述>。示例：'feat: 增加 PDF 文件预览功能'。类型可选范围：feat, fix, docs, style, refactor, chore。"
+        }
+    ]
+}

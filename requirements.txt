@@ -6,6 +6,7 @@ langchain-openai
 python-multipart
 python-dotenv
 pypdf
-langchain-postgres
+langchain-elasticsearch
+elasticsearch
 psycopg[binary]
 psycopg-pool

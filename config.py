@@ -5,15 +5,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # 从环境中读取配置设置
+    # PostgreSQL 配置（仅用于 SQLAlchemy 存储会话历史，不做向量搜索）
     POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
     POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
     POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
     POSTGRES_DB = os.getenv("POSTGRES_DB", "unibrain_db")
-    
-    # SQLAlchemy & pgvector 的数据库连接字符串配置
+
+    # SQLAlchemy 异步连接字符串（会话历史使用）
     DATABASE_URL = f"postgresql+psycopg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+    # Elasticsearch 配置（用于向量知识库存储）
+    ES_URL = os.getenv("ES_URL", "http://localhost:9200")
+    ES_INDEX_NAME = os.getenv("ES_INDEX_NAME", "institution_docs")
+    ES_USERNAME = os.getenv("ES_USERNAME", "")  # 如无认证可留空
+    ES_PASSWORD = os.getenv("ES_PASSWORD", "")  # 如无认证可留空
 
     # LLM Settings (现已配置为智谱 AI)
     # 智谱提供兼容 OpenAI 格式的 API，所以可直接复用现有 OpenAI 代码架构

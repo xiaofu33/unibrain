@@ -24,6 +24,7 @@ body {
     height: 100vh;
     display: flex;
     overflow: hidden;
+    max-width: 100vw; /* 防止整体超出视口宽度 */
 }
 
 .app-container {
@@ -35,6 +36,7 @@ body {
 /* Sidebar */
 .sidebar {
     width: 320px;
+    flex-shrink: 0; /* 防止侧边栏被内容区域挤压 */
     background: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     display: flex;
@@ -127,6 +129,7 @@ body {
 /* Chat Area */
 .chat-area {
     flex: 1;
+    min-width: 0; /* 允许 flex 子项正确收缩，防止溢出 */
     display: flex;
     flex-direction: column;
     background: radial-gradient(circle at 50% 0%, #f6f8fa 0%, var(--bg-color) 100%);
@@ -150,6 +153,7 @@ body {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden; /* 阻断气泡横向溢出，防止撑宽布局 */
     padding: 32px;
     display: flex;
     flex-direction: column;
@@ -160,6 +164,8 @@ body {
     display: flex;
     gap: 16px;
     max-width: 80%;
+    min-width: 0; /* flex 子项必须设置，否则无法正常收缩 */
+    overflow: hidden; /* 防止内容溢出消息容器 */
     animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -183,6 +189,11 @@ body {
     border: 1px solid var(--glass-border);
     backdrop-filter: blur(8px);
     white-space: pre-wrap;
+    overflow-wrap: break-word; /* 长单词/URL 自动换行 */
+    word-break: break-word;    /* 防止长字符串撑开气泡 */
+    min-width: 0;              /* flex 子项收缩修复 */
+    max-width: 100%;           /* 不允许超出父容器 */
+    overflow: hidden;          /* 兜底截断溢出内容 */
     box-shadow: 0 4px 12px rgba(0,0,0,0.02);
 }
 
