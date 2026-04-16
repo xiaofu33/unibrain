@@ -106,18 +106,68 @@ class DocumentService:
         """
         extension = filename.split(".")[-1].lower()
         if extension == "pdf":
-            loader = PyPDFLoader(file_path)
+            try:
+                from zhipuai import ZhipuAI
+                import base64
+
+                client = ZhipuAI(api_key=settings.LLM_API_KEY)
+                
+                # GLM-OCR 能够直接处理文件或图片。
+                # 由于我们这里通常是本地文件，我们将其读取并调用 GLM-OCR。
+                # 注意：GLM-OCR 最佳实践是对每页进行处理或直接上传 PDF。
+                # 这里我们采用 PDF 直接处理方案 (如果模型支持) 或简单的单次调用。
+                
+                with open(file_path, "rb") as f:
+                    file_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+                response = client.chat.completions.create(
+                    model=settings.GLM_OCR_MODEL_NAME,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "请对该文档进行 OCR 解析，并以 Markdown 格式输出内容。保持原有的标题层级、列表和表格结构。"
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:application/pdf;base64,{file_b64}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                )
+                
+                content = response.choices[0].message.content
+                # 将提取的内容包装成 LangChain Document
+                documents = [Document(page_content=content, metadata={"source": filename, "page": 1})]
+                # 跳过后面的 loader.load()
+                loader = None 
+            except Exception as e:
+                print(f"[OCR 错误] GLM-OCR 解析失败: {e}")
+                loader = PyPDFLoader(file_path)
         elif extension in ["doc", "docx"]:
             loader = UnstructuredWordDocumentLoader(file_path)
         else:
             loader = TextLoader(file_path, encoding="utf-8")
 
-        documents = loader.load()
+        if loader:
+            documents = loader.load()
         chunks = self.text_splitter.split_documents(documents)
 
+        # 过滤 metadata，严格保留安全的基本字段，避免抛出不可预见的 BulkIndexError
         for chunk in chunks:
             chunk.metadata["source"] = filename
             chunk.metadata["type"] = "upload"
+            
+            safe_metadata = {}
+            for k in ["source", "type", "page"]:
+                if k in chunk.metadata:
+                    safe_metadata[k] = chunk.metadata[k]
+            chunk.metadata = safe_metadata
 
         if chunks:
             self.vector_store.add_documents(chunks)
@@ -127,6 +177,5 @@ class DocumentService:
 
     async def sync_external_knowledge(self, source_url: str):
         pass
-
 
 document_service = DocumentService()

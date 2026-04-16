@@ -26,6 +26,7 @@ class Config:
     LLM_API_BASE = os.getenv("LLM_API_BASE", "https://open.bigmodel.cn/api/paas/v4/")
     LLM_API_KEY = os.getenv("LLM_API_KEY", "702beb3d010b4d30949c19a4f14ef375.7NLh9GlER4EM6Iw9") 
     LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "glm-4.7")
+    GLM_OCR_MODEL_NAME = os.getenv("GLM_OCR_MODEL_NAME", "glm-ocr")
 
     # Embeddings Settings 
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "embedding-3")
