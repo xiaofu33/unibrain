@@ -24,3 +24,6 @@ init_db.py
 
 # 操作系统
 .DS_Store
+
+# Agent 配置
+.agents/

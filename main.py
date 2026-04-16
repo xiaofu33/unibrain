@@ -4,6 +4,9 @@ from routers import api
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
+# Setup Huggingface Mirror to prevent download failures in China
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+
 
 app = FastAPI(
     title="Intelligent Q&A Microservice",

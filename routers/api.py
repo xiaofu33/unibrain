@@ -32,6 +32,8 @@ async def upload_document(file: UploadFile = File(...)):
         # 成功后在硬盘保留文件，便于前台引用溯源查看
         return {"message": "Upload successful", "chunks_processed": len(chunks)}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         if os.path.exists(file_path):
             os.remove(file_path)
         raise HTTPException(status_code=500, detail=str(e))
