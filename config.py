@@ -31,4 +31,9 @@ class Config:
     # Embeddings Settings 
     EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "embedding-3")
     
+    # Reranker Settings
+    RERANKER_MODEL_NAME = os.getenv("RERANKER_MODEL_NAME", "rerank")
+    RAG_RETRIEVAL_K = int(os.getenv("RAG_RETRIEVAL_K", "15"))
+    RAG_RERANK_TOP_N = int(os.getenv("RAG_RERANK_TOP_N", "5"))
+    
 settings = Config()

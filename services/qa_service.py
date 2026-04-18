@@ -1,6 +1,8 @@
 from config import settings
 from langchain_openai import ChatOpenAI
 from services.document_service import document_service
+from langchain_classic.retrievers import ContextualCompressionRetriever
+from services.reranker_service import ZhipuAIReranker
 
 class QAService:
     def __init__(self):
@@ -21,8 +23,16 @@ class QAService:
         4. 请求 LLM 进行思考及回复
         """
         # 从 PostgreSQL pgvector 检索符合语义的关联知识库块
-        retriever = document_service.vector_store.as_retriever(search_kwargs={"k": 5})
-        docs = retriever.invoke(question)
+        # 升级为双阶段检索逻辑: 
+        # 1. 第一阶段召回 (k=15)
+        base_retriever = document_service.vector_store.as_retriever(search_kwargs={"k": settings.RAG_RETRIEVAL_K})
+        # 2. 第二阶段重排 (top_n=5)
+        compressor = ZhipuAIReranker(top_n=settings.RAG_RERANK_TOP_N)
+        compression_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, 
+            base_retriever=base_retriever
+        )
+        docs = compression_retriever.invoke(question)
         
         if not docs:
             context = "没有找到与您问题相关的制度资料。"
@@ -61,8 +71,14 @@ class QAService:
         if document_service.vector_store is None:
             context = "当前系统的制度库尚未上传任何文档，请先在左侧界面上传一份制度资料。"
         else:
-            retriever = document_service.vector_store.as_retriever(search_kwargs={"k": 5})
-            docs = retriever.invoke(question)
+            # 升级为流式上下文重排逻辑
+            base_retriever = document_service.vector_store.as_retriever(search_kwargs={"k": settings.RAG_RETRIEVAL_K})
+            compressor = ZhipuAIReranker(top_n=settings.RAG_RERANK_TOP_N)
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=compressor, 
+                base_retriever=base_retriever
+            )
+            docs = compression_retriever.invoke(question)
             
             if not docs:
                 context = "没有找到与您问题相关的制度资料。"
