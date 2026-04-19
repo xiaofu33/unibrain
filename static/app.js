@@ -42,9 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) {
                 const li = document.createElement('li');
                 li.innerHTML = `📄 <span>${file.name}</span>`;
-                li.style.cssText = "padding: 12px 16px; background: rgba(0, 0, 0, 0.02); border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 12px;";
                 docList.appendChild(li);
-                uploadStatus.innerHTML = '✅ <span>解析成功并持久化完毕</span>';
+                uploadStatus.innerHTML = '✅ <span>解析成功</span>';
             } else {
                 uploadStatus.innerHTML = `❌ <span>失败: ${data.detail}</span>`;
             }
@@ -139,13 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = 'msg-' + Date.now();
         if (isTyping) msgDiv.id = id;
 
-        const avatar = `<div class="avatar">${sender === 'user' ? '我' : 'AI'}</div>`;
+        const avatarInitial = sender === 'user' ? 'U' : 'AI';
+        const avatar = `<div class="avatar">${avatarInitial}</div>`;
         const content = `<div class="bubble">${marked.parse(text)}</div>`;
 
         msgDiv.innerHTML = sender === 'user' ? content + avatar : avatar + content;
         chatMessages.appendChild(msgDiv);
         
-        // 强制滚动到底部，确保新追加的消息可见（尤其是新版 UI 带有渐动效果）
+        // 强制滚动到底部
         requestAnimationFrame(() => {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
@@ -213,6 +213,27 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("加载消息失败", error);
         }
     }
+
+    // ========== 主题切换逻辑 ==========
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = document.getElementById('theme-icon');
+    
+    const sunIcon = `<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>`;
+    const moonIcon = `<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>`;
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        themeIcon.innerHTML = theme === 'light' ? moonIcon : sunIcon;
+        localStorage.setItem('theme', theme);
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        setTheme(currentTheme === 'light' ? 'dark' : 'light');
+    });
 
     // 初始化生命周期
     startNewChat();

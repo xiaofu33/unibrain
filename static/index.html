@@ -3,68 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>制度管理系统 - 智能问答</title>
-    <link rel="stylesheet" href="/static/style.css?v=2">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>UniBrain | 智能企业制度中心</title>
+    <!-- 引入 Outfit 字体提升高级感 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar for Document Uploads -->
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
-            <h2>UniBrain Q&A</h2>
-            <button id="new-chat-btn" style="width:100%; padding: 10px; margin-bottom: 24px; background: var(--accent-color); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">+ 新建对话</button>
-        </div>
-
-        <div class="conv-list-section" style="margin-bottom: 24px; max-height: 35%; overflow-y: auto;">
-            <h3 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 600;">历史对话</h3>
-            <ul id="conv-list" style="list-style: none; gap: 8px; display: flex; flex-direction: column;"></ul>
-        </div>
+                <h2><span>🧠</span> UniBrain</h2>
+                <button id="theme-toggle" title="切换主题">
+                    <svg id="theme-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+                </button>
+            </div>
             
+            <button id="new-chat-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                开启新对话
+            </button>
+
+            <div class="conv-list-section">
+                <h3>历史会话</h3>
+                <ul id="conv-list"></ul>
+            </div>
+            
+            <div class="doc-list-section">
+                <h3>制度库文档</h3>
+                <ul id="doc-list"></ul>
+            </div>
+
             <div class="upload-section">
                 <div id="drop-zone" class="drop-zone">
-                    <span class="upload-icon">📄</span>
-                    <p>拖拽文件至此</p>
-                    <p class="sub-text">或点击上传 (PDF, Word, TXT)</p>
+                    <span class="upload-icon">✦</span>
+                    <p>上传新制度</p>
+                    <p class="sub-text">拖拽 PDF 或 Word 文件</p>
                     <input type="file" id="file-input" accept=".pdf,.doc,.docx,.txt" />
                 </div>
-                <!-- Upload status -->
                 <div id="upload-status" class="upload-status hidden">
                     <div class="spinner"></div>
                     <span>处理中...</span>
                 </div>
             </div>
-
-            <div class="doc-list-section">
-                <h3>已上传文档</h3>
-                <ul id="doc-list">
-                    <!-- Dynamic List -->
-                </ul>
-            </div>
         </aside>
 
-        <!-- Main Chat Area -->
+        <!-- Main Chat -->
         <main class="chat-area">
             <header class="chat-header">
                 <div class="chat-title">
                     <span class="ai-icon">✨</span>
-                    <h2>智能问答助手</h2>
+                    <h2>智能助手</h2>
                 </div>
                 <div class="status-indicator">
-                    <span class="dot"></span> 服务正常
+                    <span class="dot"></span> 系统在线
                 </div>
             </header>
 
             <div id="chat-messages" class="chat-messages">
-                <!-- Messages will be appended here -->
+                <!-- Messages dynamic -->
             </div>
 
             <div class="input-area">
                 <form id="chat-form">
-                    <input type="text" id="chat-input" placeholder="输入公司制度问题..." autocomplete="off"/>
+                    <input type="text" id="chat-input" placeholder="请问关于公司制度，有什么可以帮您的？" autocomplete="off"/>
                     <button type="submit" id="send-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                     </button>
                 </form>
             </div>
