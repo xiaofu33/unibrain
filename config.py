@@ -40,4 +40,8 @@ class Config:
     ENABLE_QUERY_REWRITE = os.getenv("ENABLE_QUERY_REWRITE", "True").lower() == "true"
     QUERY_REWRITE_HISTORY_COUNT = int(os.getenv("QUERY_REWRITE_HISTORY_COUNT", "5"))
     
+    # Multi-Query Settings
+    ENABLE_MULTI_QUERY = os.getenv("ENABLE_MULTI_QUERY", "True").lower() == "true"
+    MULTI_QUERY_COUNT = int(os.getenv("MULTI_QUERY_COUNT", "3"))
+    
 settings = Config()
