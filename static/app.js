@@ -15,8 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSessionId = null;
         chatMessages.innerHTML = '';
         appendMessage('ai', '您好！我是企业制度管理助手。我已经读取了目前的制度库。请问您有什么关于制度的问题想要查询？');
-        // highlight none in sidebar
-        document.querySelectorAll('#conv-list li').forEach(el => el.style.border = '1px solid transparent');
+        document.querySelectorAll('#conv-list li').forEach(el => el.classList.remove('active'));
     }
 
     // 初始化事件绑定
@@ -145,7 +144,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         msgDiv.innerHTML = sender === 'user' ? content + avatar : avatar + content;
         chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // 强制滚动到底部，确保新追加的消息可见（尤其是新版 UI 带有渐动效果）
+        requestAnimationFrame(() => {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+        
         return id;
     }
 
@@ -161,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.documents.forEach(docName => {
                         const li = document.createElement('li');
                         li.innerHTML = `📄 <span>${docName}</span>`;
-                        li.style.cssText = "padding: 12px 16px; background: rgba(0, 0, 0, 0.02); border-radius: 8px; margin-bottom: 8px; font-size: 0.9rem; display: flex; align-items: center; gap: 12px;";
                         docList.appendChild(li);
                     });
                 }
@@ -180,9 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.conversations.forEach(conv => {
                         const li = document.createElement('li');
                         li.innerHTML = `💬 <span>${conv.title || "新对话"}</span>`;
-                        li.style.cssText = "padding: 10px; background: rgba(0, 0, 0, 0.03); border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem;";
                         li.onclick = () => loadMessagesForSession(conv.id, li);
-                        if(currentSessionId === conv.id) li.style.border = "1px solid var(--accent-color)";
+                        if(currentSessionId === conv.id) li.classList.add('active');
                         convList.appendChild(li);
                     });
                 }
@@ -193,8 +195,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. 用户点击左侧历史，右侧恢复聊天流
     async function loadMessagesForSession(sessionId, liElement) {
         currentSessionId = sessionId;
-        document.querySelectorAll('#conv-list li').forEach(el => el.style.border = '1px solid transparent');
-        if(liElement) liElement.style.border = "1px solid var(--accent-color)";
+        document.querySelectorAll('#conv-list li').forEach(el => el.classList.remove('active'));
+        if(liElement) liElement.classList.add('active');
         
         chatMessages.innerHTML = '';
         try {

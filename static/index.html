@@ -52,21 +52,20 @@
                     <h2>智能问答助手</h2>
                 </div>
                 <div class="status-indicator">
-                    <span class="dot active"></span> 服务正常
+                    <span class="dot"></span> 服务正常
                 </div>
             </header>
 
             <div id="chat-messages" class="chat-messages">
-                <div class="message ai">
-                    <div class="avatar">AI</div>
-                    <div class="bubble">欢迎使用制度系统问答！您可以先从左侧上传制度文档，然后在这里向我提问有关内容。</div>
-                </div>
+                <!-- Messages will be appended here -->
             </div>
 
             <div class="input-area">
                 <form id="chat-form">
-                    <input type="text" id="chat-input" placeholder="请输入关于公司制度的问题..." autocomplete="off"/>
-                    <button type="submit" id="send-btn">发送</button>
+                    <input type="text" id="chat-input" placeholder="输入公司制度问题..." autocomplete="off"/>
+                    <button type="submit" id="send-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
                 </form>
             </div>
         </main>
