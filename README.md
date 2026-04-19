@@ -21,29 +21,51 @@
 - **向量存储**: PostgreSQL (pgvector) / Elasticsearch
 - **环境管理**: uv
 
-## 🚀 快速开始
+- **后端**: FastAPI, SQLAlchemy (PostgreSQL), LangChain
+- **存储**: Elasticsearch (向量数据库), PostgreSQL (结构化存储)
+- **环境管理**: [uv](https://github.com/astral-sh/uv) (高效的 Python 包管理器)
+- **模型**: ZhipuAI (Embedding & LLM & Reranker)
 
-### 1. 环境准备
-- 确保系统已安装 Python >= 3.13。
-- 配置好相关的数据库实例（PostgreSQL + `pgvector` 插件，或 Elasticsearch 实例）。
-- 可用的本地或局域网 LLM 接口服务（如 Ollama，或兼容 OpenAI API 格式的在线大模型接口）。
-- 建议全局安装新一代 Python 环境工具 [uv](https://github.com/astral-sh/uv)。
+## 🚀 快速上手
 
-### 2. 安装与运行
+### 前置要求
+- Python 3.13+
+- 已配置的 Elasticsearch 8.x
+- 已配置的 PostgreSQL
+
+### 安装与构建
+本项目使用 `uv` 进行依赖管理，安装速度极快。
 
 ```bash
-# 1. 克隆或进入项目代码目录
-cd unibrain
-
-# 2. 同步项目依赖 (如果不使用 uv，也可以使用 pip install -r requirements.txt)
+# 安装依赖并设置虚拟环境
 uv sync
 
-# 3. 环境变量配置 (请参考配置模板并填写您的密钥/数据库链接)
-cp .env.example .env
-
-# 4. 启动后端服务 (服务默认挂载在 http://0.0.0.0:8000)
-uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# 配置环境变量 (参考 config.py 或 .env)
+cp .env.example .env  # 如果有 .env.example
 ```
+
+### 运行服务
+```bash
+# 启动开发服务器
+uv run uvicorn main:app --reload
+```
+访问 [http://localhost:8000](http://localhost:8000) 即可开始使用。
+
+## ⚙️ 配置说明
+主要配置项位于 `config.py`，支持以下环境变量：
+- `ELASTICSEARCH_URL`: ES 连接地址
+- `DATABASE_URL`: PostgreSQL 连接地址
+- `ZHIPUAI_API_KEY`: 智谱 AI 密钥
+
+## 🤝 贡献指南
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+## 📄 开源协议
+本项目基于 [MIT](LICENSE) 协议开源。
 
 ## 📚 API 接口指南
 
