@@ -36,4 +36,8 @@ class Config:
     RAG_RETRIEVAL_K = int(os.getenv("RAG_RETRIEVAL_K", "15"))
     RAG_RERANK_TOP_N = int(os.getenv("RAG_RERANK_TOP_N", "5"))
     
+    # Query Rewrite Settings
+    ENABLE_QUERY_REWRITE = os.getenv("ENABLE_QUERY_REWRITE", "True").lower() == "true"
+    QUERY_REWRITE_HISTORY_COUNT = int(os.getenv("QUERY_REWRITE_HISTORY_COUNT", "5"))
+    
 settings = Config()

@@ -14,6 +14,47 @@ class QAService:
             streaming=True
         )
         
+    async def _rewrite_query(self, question: str, session_id: str = None) -> str:
+        """
+        利用 LLM 和对话历史，将用户当前提问重写为独立的补全查询 (一步式合并方案)
+        """
+        if not session_id or not settings.ENABLE_QUERY_REWRITE:
+            return question
+            
+        from services.history_service import history_service
+        # 获取最近 N 轮对话历史
+        msgs = await history_service.get_messages(session_id)
+        if not msgs:
+            return question
+            
+        # 截取最近的配置轮数
+        recent_msgs = msgs[-settings.QUERY_REWRITE_HISTORY_COUNT:]
+        history_str = "\n".join([f"{'用户' if m['sender']=='user' else 'AI'}: {m['content']}" for m in recent_msgs])
+        
+        prompt = f"""角色：对话补全专家
+任务：根据对话历史，将用户的提问改写为独立的、具备完整检索语义的搜索查询。
+规则：
+1. 如果原问题已经是独立的（如“什么是差旅费？”），必须原样输出，禁止任何修改。
+2. 如果原问题包含代词（“它”、“这个”）或省略主语，则补全。
+3. 只输出最终的查询文本，不需要任何开头语、解释或多余字符。
+4. 禁止回答问题。
+
+对话历史：
+{history_str}
+
+用户当前提问：{question}
+最终检索语句："""
+        
+        try:
+            # 使用同步调用 llm.invoke (对于重写这种短文本中间步骤，invoke 够用了)
+            response = await self.llm.ainvoke(prompt)
+            rewritten_query = response.content.strip()
+            # 如果 LLM 返回为空或异常，回退到原问题
+            return rewritten_query if rewritten_query else question
+        except Exception as e:
+            print(f"Query rewrite failed: {e}")
+            return question
+
     async def ask_question(self, question: str, session_id: str = None) -> str:
         """
         通过 RAG 流程处理问答:
@@ -22,7 +63,10 @@ class QAService:
         3. 将检索到的上下文及用户问题共同构成 Prompt 提示词
         4. 请求 LLM 进行思考及回复
         """
-        # 从 PostgreSQL pgvector 检索符合语义的关联知识库块
+        # 1. 查询重写逻辑 (针对多轮对话补全语义)
+        retrieval_query = await self._rewrite_query(question, session_id)
+        
+        # 2. 从 PostgreSQL pgvector 检索符合语义的关联知识库块
         # 升级为双阶段检索逻辑: 
         # 1. 第一阶段召回 (k=15)
         base_retriever = document_service.vector_store.as_retriever(search_kwargs={"k": settings.RAG_RETRIEVAL_K})
@@ -32,7 +76,7 @@ class QAService:
             base_compressor=compressor, 
             base_retriever=base_retriever
         )
-        docs = compression_retriever.invoke(question)
+        docs = compression_retriever.invoke(retrieval_query)
         
         if not docs:
             context = "没有找到与您问题相关的制度资料。"
@@ -68,6 +112,9 @@ class QAService:
         与 ask_question 逻辑完全一致，但使用流式生成器返回每个 Chunk
         """
         unique_sources = []
+        # 1. 查询重写逻辑
+        retrieval_query = await self._rewrite_query(question, session_id)
+
         if document_service.vector_store is None:
             context = "当前系统的制度库尚未上传任何文档，请先在左侧界面上传一份制度资料。"
         else:
@@ -78,7 +125,7 @@ class QAService:
                 base_compressor=compressor, 
                 base_retriever=base_retriever
             )
-            docs = compression_retriever.invoke(question)
+            docs = compression_retriever.invoke(retrieval_query)
             
             if not docs:
                 context = "没有找到与您问题相关的制度资料。"
