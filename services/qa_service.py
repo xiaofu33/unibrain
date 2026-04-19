@@ -13,7 +13,8 @@ class QAService:
             model=settings.LLM_MODEL_NAME,
             api_key=settings.LLM_API_KEY, # type: ignore
             base_url=settings.LLM_API_BASE,
-            streaming=True
+            streaming=True,
+            max_tokens=4096
         )
         
     async def _rewrite_and_expand_query(self, question: str, session_id: str = None) -> List[str]:
