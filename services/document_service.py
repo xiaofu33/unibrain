@@ -2,7 +2,7 @@ from typing import List
 from langchain_core.embeddings import Embeddings
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, UnstructuredWordDocumentLoader
 from langchain_core.documents import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from langchain_elasticsearch import ElasticsearchStore
 from elasticsearch import Elasticsearch
 from config import settings
@@ -45,10 +45,21 @@ class ZhipuEmbeddings(Embeddings):
 
 class DocumentService:
     def __init__(self):
+        # 基础递归字符分割器，用于对长分块进行二次细分
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=800,
+            chunk_overlap=150,
             length_function=len,
+        )
+        # Markdown 标题分割器，用于保持自然结构
+        headers_to_split_on = [
+            ("#", "Header 1"),
+            ("##", "Header 2"),
+            ("###", "Header 3"),
+        ]
+        self.markdown_splitter = MarkdownHeaderTextSplitter(
+            headers_to_split_on=headers_to_split_on,
+            strip_headers=False # 保留标题文字在正文中
         )
         # 使用自定义 ZhipuEmbeddings，绕过 tiktoken 和系统代理
         self.embeddings = ZhipuEmbeddings(
@@ -156,7 +167,48 @@ class DocumentService:
 
         if loader:
             documents = loader.load()
-        chunks = self.text_splitter.split_documents(documents)
+        
+        final_chunks = []
+        
+        # 处理逻辑：如果是 Markdown (来自 OCR 或其他)，使用结构化分割
+        # 否则回退到普通分割
+        for doc in documents:
+            # 判断是否包含 Markdown 特征或强制对 OCR 结果使用
+            if extension == "pdf" or "# " in doc.page_content:
+                # 1. 结构化分割
+                header_splits = self.markdown_splitter.split_text(doc.page_content)
+                
+                for h_split in header_splits:
+                    # 提取标题路径作为上下文
+                    headers = [h_split.metadata.get(f"Header {i}") for i in range(1, 4)]
+                    header_path = " > ".join([h for h in headers if h])
+                    
+                    # 2. 如果片段过长，进行二次分割
+                    if len(h_split.page_content) > self.text_splitter._chunk_size:
+                        sub_splits = self.text_splitter.split_text(h_split.page_content)
+                        for i, sub_content in enumerate(sub_splits):
+                            # 注入上下文前缀
+                            context_prefix = f"[章节: {header_path}] " if header_path else ""
+                            enriched_content = f"{context_prefix}{sub_content}"
+                            
+                            new_doc = Document(
+                                page_content=enriched_content,
+                                metadata={**doc.metadata, **h_split.metadata, "chunk_index": i, "header_path": header_path}
+                            )
+                            final_chunks.append(new_doc)
+                    else:
+                        # 注入上下文前缀
+                        context_prefix = f"[章节: {header_path}] " if header_path else ""
+                        new_doc = Document(
+                            page_content=f"{context_prefix}{h_split.page_content}",
+                            metadata={**doc.metadata, **h_split.metadata, "header_path": header_path}
+                        )
+                        final_chunks.append(new_doc)
+            else:
+                # 非 Markdown 文档走普通逻辑
+                final_chunks.extend(self.text_splitter.split_documents([doc]))
+
+        chunks = final_chunks
 
         # 过滤 metadata，严格保留安全的基本字段，避免抛出不可预见的 BulkIndexError
         for chunk in chunks:
