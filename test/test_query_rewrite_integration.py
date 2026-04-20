@@ -29,11 +29,12 @@ async def test_query_rewrite_integration():
     # 这里我们直接调用业务接口，验证是否能跑通且不报错
     try:
         # 尝试重写查询以供观察 (手动调用私有方法进行验证)
-        rewritten_query = await qa_service._rewrite_query(second_question, session_id)
+        queries = await qa_service._rewrite_and_expand_query(second_question, session_id)
+        rewritten_query = queries[0] # 第一个通常是补全后的完整问题
         print(f">>> LLM 重写后的查询为: 【{rewritten_query}】")
         
-        # 验证重写逻辑是否有效（重写后的查询应包含关键词）
-        assert "加班" in rewritten_query or "上限" in rewritten_query
+        # 验证重写逻辑是否有效（重写后的查询应包含关键词建议或补全后的主问题）
+        assert any("加班" in q or "上限" in q for q in queries)
         
         # 执行完整的问答流程 (包含重写 -> 检索 -> 生成)
         # 注意：如果 ES 里没数据，这里会返回“没找到相关资料”，这是正常的

@@ -1,7 +1,9 @@
 import asyncio
+import pytest
 from langchain_core.documents import Document
 from services.reranker_service import ZhipuAIReranker
 
+@pytest.mark.asyncio
 async def test_reranker():
     print("开始测试智谱 Reranker...")
     

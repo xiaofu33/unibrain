@@ -43,5 +43,8 @@ class Config:
     # Multi-Query Settings
     ENABLE_MULTI_QUERY = os.getenv("ENABLE_MULTI_QUERY", "True").lower() == "true"
     MULTI_QUERY_COUNT = int(os.getenv("MULTI_QUERY_COUNT", "3"))
+
+    # Hybrid Search Settings
+    ENABLE_HYBRID_SEARCH = os.getenv("ENABLE_HYBRID_SEARCH", "True").lower() == "true"
     
 settings = Config()
