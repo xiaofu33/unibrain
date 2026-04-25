@@ -138,47 +138,22 @@ class DocumentService:
         extension = filename.split(".")[-1].lower()
         if extension == "pdf":
             try:
-                from zhipuai import ZhipuAI
-                import base64
+                from glmocr import GlmOcr
 
-                client = ZhipuAI(api_key=settings.LLM_API_KEY)
-                
-                # GLM-OCR 能够直接处理文件或图片。
-                # 由于我们这里通常是本地文件，我们将其读取并调用 GLM-OCR。
-                # 注意：GLM-OCR 最佳实践是对每页进行处理或直接上传 PDF。
-                # 这里我们采用 PDF 直接处理方案 (如果模型支持) 或简单的单次调用。
-                
-                with open(file_path, "rb") as f:
-                    file_b64 = base64.b64encode(f.read()).decode("utf-8")
+                # 使用官方 glmocr SDK 调用 MaaS 云端 API 进行 OCR
+                # chat.completions 接口不支持 PDF base64，必须使用专用 SDK
+                with GlmOcr(api_key=settings.LLM_API_KEY) as ocr_parser:
+                    result = ocr_parser.parse(file_path)
 
-                response = client.chat.completions.create(
-                    model=settings.GLM_OCR_MODEL_NAME,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": "请对该文档进行 OCR 解析，并以 Markdown 格式输出内容。保持原有的标题层级、列表和表格结构。"
-                                },
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:application/pdf;base64,{file_b64}"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                )
-                
-                content = response.choices[0].message.content
+                content = getattr(result, "markdown_result", None) or str(result)
+                print(f"[文档服务] GLM-OCR 解析成功，共提取 {len(content)} 字符")
+
                 # 将提取的内容包装成 LangChain Document
                 documents = [Document(page_content=content, metadata={"source": filename, "page": 1})]
                 # 跳过后面的 loader.load()
-                loader = None 
+                loader = None
             except Exception as e:
-                print(f"[OCR 错误] GLM-OCR 解析失败: {e}")
+                print(f"[OCR 错误] GLM-OCR 解析失败，降级使用 PyPDFLoader: {e}")
                 loader = PyPDFLoader(file_path)
         elif extension in ["doc", "docx"]:
             loader = UnstructuredWordDocumentLoader(file_path)
@@ -242,9 +217,15 @@ class DocumentService:
             chunk.metadata = safe_metadata
 
         if chunks:
-            self.vector_store.add_documents(chunks)
-            print(f"[文档服务] 已写入 {len(chunks)} 个片段到 ES: {filename}")
-            # [Eviction] 知识库更新，清空所有语义缓存内容封装完毕。
+            # 智谱 Embedding API 单次最多接受 25 条文本，超出会报 400
+            # 分批写入，每批 25 个片段
+            BATCH_SIZE = 25
+            for i in range(0, len(chunks), BATCH_SIZE):
+                batch = chunks[i: i + BATCH_SIZE]
+                self.vector_store.add_documents(batch)
+                print(f"[文档服务] 已写入第 {i // BATCH_SIZE + 1} 批，共 {len(batch)} 个片段")
+            print(f"[文档服务] 全部写入完成，共 {len(chunks)} 个片段到 ES: {filename}")
+            # [Eviction] 知识库更新，清空所有语义缓存
             import asyncio
             asyncio.create_task(cache_service.clear_all_cache())
 
