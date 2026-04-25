@@ -4,6 +4,16 @@ from routers import api
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
+from contextlib import asynccontextmanager
+from services.cache_service import cache_service
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动：初始化向量索引结构内容封装完毕。
+    await cache_service.init_indices()
+    yield
+    # 关闭：清理连接内容封装完毕。
+    await cache_service.close()
 # Setup Huggingface Mirror to prevent download failures in China
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
@@ -12,6 +22,7 @@ app = FastAPI(
     title="Intelligent Q&A Microservice",
     description="RAG-based intelligent Q&A module for Institution Management System",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 # 为前端调用和主 Java 系统配置跨域资源共享 (CORS)

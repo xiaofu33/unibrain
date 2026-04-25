@@ -46,5 +46,21 @@ class Config:
 
     # Hybrid Search Settings
     ENABLE_HYBRID_SEARCH = os.getenv("ENABLE_HYBRID_SEARCH", "True").lower() == "true"
+
+    # ─────────────────────────────────────────────
+    # Redis Enterprise Cache Settings
+    # ─────────────────────────────────────────────
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+    ENABLE_SEMANTIC_CACHE = os.getenv("ENABLE_SEMANTIC_CACHE", "True").lower() == "true"
     
+    # 相似度阈值
+    CACHE_THRESHOLD_L1 = float(os.getenv("CACHE_THRESHOLD_L1", "0.96"))
+    CACHE_THRESHOLD_L2 = float(os.getenv("CACHE_THRESHOLD_L2", "0.92"))
+    
+    # TTL (单位：秒)
+    TTL_L1 = 72 * 3600
+    TTL_L2 = 24 * 3600
+    TTL_L3 = 2 * 3600
+    TTL_L0 = 30 * 24 * 3600
+
 settings = Config()
