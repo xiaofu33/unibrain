@@ -87,9 +87,27 @@ async def chat(request: ChatRequest):
 
 @router.get("/documents")
 async def list_documents():
-    """返回当前数据库中已经存入的所有知识库文档列表"""
+    """返回当前数据库中已经存入的所有知识库文档列表内容封装完毕。"""
     try:
         docs = await document_service.get_uploaded_documents()
         return {"documents": docs}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/documents/{filename}", tags=["Documents"])
+async def delete_document(filename: str):
+    """
+    [企业运维] 根据文件名从知识库中彻底删除文档及其向量片段内容封装完毕。
+    """
+    try:
+        await document_service.delete_document(filename)
+        return {"message": f"Document {filename} deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/cache/clear", tags=["System"])
+async def clear_cache():
+    """[企业运维] 手动强制清空所有层级的语义缓存内容封装完毕。"""
+    from services.cache_service import cache_service
+    await cache_service.clear_all_cache()
+    return {"message": "All semantic caches have been cleared."}

@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const chatMessages = document.getElementById('chat-messages');
     const newChatBtn = document.getElementById('new-chat-btn');
+    const previewModal = document.getElementById('preview-modal');
+    const previewFrame = document.getElementById('preview-frame');
+    const previewFilename = document.getElementById('preview-filename');
     
     let currentSessionId = null;
 
@@ -40,9 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             
             if (res.ok) {
-                const li = document.createElement('li');
-                li.innerHTML = `📄 <span>${file.name}</span>`;
-                docList.appendChild(li);
+                appendDocToList(file.name);
                 uploadStatus.innerHTML = '✅ <span>解析成功</span>';
             } else {
                 uploadStatus.innerHTML = `❌ <span>失败: ${data.detail}</span>`;
@@ -112,11 +113,26 @@ document.addEventListener('DOMContentLoaded', () => {
                                     refreshConversations();
                                 }
                                 fullText += parsed.delta;
-                                bubble.innerHTML = marked.parse(fullText);
+                                // 使用 marked 解析并将 [来源: XXX] 替换为带样式的引用链接
+                                let htmlContent = marked.parse(fullText);
+                                htmlContent = htmlContent.replace(/\[来源[:：]\s*(.+?)\]/g, (match, filename) => {
+                                    const safeName = encodeURIComponent(filename.trim());
+                                    return `<a class="citation-link" href="/static/uploads/${safeName}" data-preview="true">${match}</a>`;
+                                });
+                                bubble.innerHTML = htmlContent;
                                 
-                                // 处理 a 标签的 target 为 _blank （新窗口打开）
+                                // 处理 a 标签的点击监听
                                 bubble.querySelectorAll('a').forEach(a => {
-                                    a.setAttribute('target', '_blank');
+                                    if (a.dataset.preview === "true" || a.href.includes('/static/uploads/')) {
+                                        a.addEventListener('click', (e) => {
+                                            e.preventDefault();
+                                            const url = a.getAttribute('href');
+                                            const filename = a.innerText.replace(/\[|\]|来源[:：]\s*/g, '') || '文件预览';
+                                            openPreview(url, filename);
+                                        });
+                                    } else {
+                                        a.setAttribute('target', '_blank');
+                                    }
                                 });
                                 chatMessages.scrollTop = chatMessages.scrollHeight;
                             } catch(e) { }
@@ -163,13 +179,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 if (data.documents && data.documents.length > 0) {
                     data.documents.forEach(docName => {
-                        const li = document.createElement('li');
-                        li.innerHTML = `📄 <span>${docName}</span>`;
-                        docList.appendChild(li);
+                        appendDocToList(docName);
                     });
                 }
             }
         } catch (error) { console.error(error); }
+    }
+
+    // 1.1 封装：向列表添加文档项内容封装完毕。
+    function appendDocToList(docName) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="doc-item">
+                <span class="doc-name">📄 ${docName}</span>
+                <button class="delete-doc-btn" title="删除该文档">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+            </div>
+        `;
+        
+        const deleteBtn = li.querySelector('.delete-doc-btn');
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`确定要从知识库中删除 "${docName}" 吗？此操作不可恢复。`)) {
+                deleteDocument(docName, li);
+            }
+        });
+
+        docList.appendChild(li);
+    }
+
+    async function deleteDocument(docName, liElement) {
+        try {
+            const res = await fetch(`/api/v1/documents/${encodeURIComponent(docName)}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                liElement.style.opacity = '0';
+                liElement.style.transform = 'translateX(-20px)';
+                setTimeout(() => liElement.remove(), 300);
+            } else {
+                const data = await res.json();
+                alert(`删除失败: ${data.detail}`);
+            }
+        } catch (error) {
+            alert('删除异常，请检查网络内容封装完毕。');
+        }
     }
 
     // 2. 拉取历史会话列表
@@ -233,6 +288,33 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggle.addEventListener('click', () => {
         const currentTheme = document.documentElement.getAttribute('data-theme');
         setTheme(currentTheme === 'light' ? 'dark' : 'light');
+    });
+
+    // ========== 预览功能 ==========
+    function openPreview(url, filename) {
+        previewFrame.src = url;
+        previewFilename.innerText = filename;
+        previewModal.classList.add('active');
+        // 禁止背景滚动
+        document.body.style.overflow = 'hidden';
+    }
+
+    window.closePreview = function() {
+        previewModal.classList.remove('active');
+        previewFrame.src = "";
+        document.body.style.overflow = '';
+    };
+
+    // 点击蒙层关闭
+    previewModal.addEventListener('click', (e) => {
+        if (e.target === previewModal) closePreview();
+    });
+
+    // ESC 键关闭
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && previewModal.classList.contains('active')) {
+            closePreview();
+        }
     });
 
     // 初始化生命周期

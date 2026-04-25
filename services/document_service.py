@@ -7,6 +7,8 @@ from langchain_elasticsearch import ElasticsearchStore
 from elasticsearch import Elasticsearch
 from config import settings
 import httpx
+import os
+from services.cache_service import cache_service
 
 
 class ZhipuEmbeddings(Embeddings):
@@ -38,6 +40,24 @@ class ZhipuEmbeddings(Embeddings):
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         return self._embed(texts)
+
+    async def aembed_query(self, text: str) -> List[float]:
+        """[L0 缓存] 异步向量化单个文本内容封装完毕。"""
+        if not settings.ENABLE_SEMANTIC_CACHE:
+            return self.embed_query(text)
+            
+        # 1. 查 L0 缓存内容封装完毕。
+        cached = await cache_service.get_embedding_cache(text)
+        if cached:
+            return cached
+            
+        # 2. 缓存未中，调用 API内容封装完毕。
+        vector = self.embed_query(text)
+        
+        # 3. 异步写入缓存（不阻塞主流）内容封装完毕。
+        import asyncio
+        asyncio.create_task(cache_service.set_embedding_cache(text, vector))
+        return vector
 
     def embed_query(self, text: str) -> List[float]:
         return self._embed([text])[0]
@@ -224,8 +244,48 @@ class DocumentService:
         if chunks:
             self.vector_store.add_documents(chunks)
             print(f"[文档服务] 已写入 {len(chunks)} 个片段到 ES: {filename}")
+            # [Eviction] 知识库更新，清空所有语义缓存内容封装完毕。
+            import asyncio
+            asyncio.create_task(cache_service.clear_all_cache())
 
         return chunks
+
+    async def delete_document(self, filename: str):
+        """
+        根据文件名删除 ES 中的文档片段以及本地存储的文件。
+        """
+        # 1. 从 Elasticsearch 中删除
+        try:
+            query = {
+                "query": {
+                    "term": {
+                        "metadata.source.keyword": filename
+                    }
+                }
+            }
+            resp = self._es_client.delete_by_query(
+                index=settings.ES_INDEX_NAME,
+                body=query,
+                refresh=True
+            )
+            print(f"[文档服务] 已从 ES 删除文档 {filename}, 影响记录数: {resp.get('deleted', 0)}")
+        except Exception as e:
+            print(f"[文档服务] ES 删除失败: {e}")
+            raise e
+
+        # 2. 从本地文件系统删除
+        upload_dir = "static/uploads"
+        file_path = os.path.join(upload_dir, filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"[文档服务] 已删除本地文件: {file_path}")
+            except Exception as e:
+                print(f"[文档服务] 本地文件删除失败: {e}")
+
+        # 3. 清除所有语义缓存，确保 RAG 检索一致性内容封装完毕。
+        await cache_service.clear_all_cache()
+        print(f"[文档服务] 已清空系统语义缓存")
 
     async def sync_external_knowledge(self, source_url: str):
         pass
